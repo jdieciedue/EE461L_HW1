@@ -3,10 +3,12 @@ package com.example.homework1;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -41,22 +43,33 @@ public class MainActivity extends AppCompatActivity {
 
         // get location coordinates from Google
         locationData addressCoord = getGeoCodeInfo(address);
+
         // get weather data from DarkSky
         weatherData addressWeather = getWeatherInfo(addressCoord.latitude, addressCoord.longitude);
 
-        // send data to weather activity and start it
-        Intent weatherIntent = new Intent(this, WeatherActivity.class);
-        double[] locationInfo = {
-                addressWeather.temp,
-                addressWeather.humidity,
-                addressWeather.windSpeed,
-                addressWeather.precepitation,
-                addressCoord.latitude,
-                addressCoord.longitude};
-        weatherIntent.putExtra(WEATHER_STRING, locationInfo);
-        startActivity(weatherIntent);
+        if(!addressCoord.error || !addressWeather.error) {
+            // send data to weather activity and start it
+            Intent weatherIntent = new Intent(this, WeatherActivity.class);
+            double[] locationInfo = {
+                    addressWeather.temp,
+                    addressWeather.humidity,
+                    addressWeather.windSpeed,
+                    addressWeather.precepitation,
+                    addressCoord.latitude,
+                    addressCoord.longitude};
+            weatherIntent.putExtra(WEATHER_STRING, locationInfo);
+            startActivity(weatherIntent);
+        }
+
+        // API error, give error message
+        else{
+            Toast errorNotify = Toast.makeText(this, "Address error, please enter new address.",
+                    Toast.LENGTH_SHORT);
+            errorNotify.show();
+        }
     }
 
+    // Nick driving
     public locationData getGeoCodeInfo(String address) {
         String[] address_split = address.split("(?<=,)");
         String url = geocodeURL;
@@ -100,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
 
         } catch(Exception e) {
             e.printStackTrace();
-            return new locationData(0, 0);
+            return new locationData(true);
         }
     }
 
@@ -135,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
 
         } catch(Exception e) {
             e.printStackTrace();
-            return new weatherData(0, 0, 0, 0);
+            return new weatherData(true);
         }
     }
 
@@ -162,29 +175,19 @@ public class MainActivity extends AppCompatActivity {
         double humidity;
         double windSpeed;
         double precepitation;
+        boolean error;
 
         weatherData(double temp, double humidity, double windSpeed, double precepitation){
             this.temp = temp;
             this.humidity = humidity;
             this.windSpeed = windSpeed;
             this.precepitation = precepitation;
+            this.error = false;
+        }
+
+        weatherData(boolean error){
+            this.error = error;
         }
     }
 
-    /*
-    private class NetworkThread implements Runnable{
-        private String address;
-        public weatherData darkSkyInfo;
-        public locationData mapsInfo;
-        NetworkThread(String address){
-            this.address = address;
-        }
-
-        @Override
-        public void run() {
-            this.mapsInfo = getGeoCodeInfo(this.address);
-            this.darkSkyInfo = getWeatherInfo(mapsInfo.latitude, mapsInfo.longitude);
-        }
-    }
-    */
 }
